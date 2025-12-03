@@ -1,0 +1,127 @@
+---
+autoinstall:
+    version: 1
+    identity:
+        realname: 'Hugo Pessoa'
+        hostname: ubuntu-desktop
+        username: hugo
+        password: '$y$j9T$/Ceghh0c0TxDAel4EO1vm1$ZXQ1J7LZhiIjGs2XsUF4MPcqRifJovDfB2dOIKWVj.3'
+    locale: pt_BR.utf8
+    keyboard:
+        layout: br
+    timezone: "America/Sao_Paulo"
+    packages:
+        - libreoffice
+    storage:
+        config:
+            - ptable: gpt
+              match:
+                  size: smallest
+              wipe: superblock-recursive
+              preserve: false
+              name: ''
+              grub_device: true
+              id: disk-sda
+              type: disk
+
+            - device: disk-sda
+              size: 536870912  # 512MB
+              wipe: superblock
+              flag: boot
+              number: 1
+              preserve: false
+              grub_device: true
+              id: partition-0
+              type: partition
+
+            - fstype: fat32
+              volume: partition-0
+              preserve: false
+              id: format-0
+              type: format
+
+            - path: /boot/efi
+              device: format-0
+              id: mount-0
+              type: mount
+
+            - device: disk-sda
+              size: 1073741824  # 1GB
+              wipe: superblock
+              number: 2
+              preserve: false
+              grub_device: false
+              id: partition-1
+              type: partition
+
+            - fstype: ext4
+              volume: partition-1
+              preserve: false
+              id: format-1
+              type: format
+
+            - path: /boot
+              device: format-1
+              id: mount-1
+              type: mount
+
+            - device: disk-sda
+              size: -1
+              wipe: superblock
+              number: 3
+              preserve: false
+              grub_device: false
+              id: partition-2
+              type: partition
+
+            - name: cryptlvm
+              volume: partition-2
+              preserve: false
+              keyfile: /etc/cryptsetup-keys.d/root.key
+              id: dm_crypt-lvm
+              type: dm_crypt
+
+            - name: VolGroup
+              devices:
+                - dm_crypt-lvm
+              preserve: false
+              id: lvm_volgroup-0
+              type: lvm_volgroup
+
+            - name: lv_root
+              volgroup: lvm_volgroup-0
+              size: -1
+              wipe: superblock
+              preserve: false
+              id: lvm_partition-root
+              type: lvm_partition
+
+            - fstype: ext4
+              volume: lvm_partition-root
+              preserve: false
+              id: format-root
+              type: format
+
+            - path: /
+              device: format-root
+              id: mount-root
+              type: mount
+    early-commands:
+        - mkdir -p /etc/cryptsetup-keys.d
+        - dd if=/dev/urandom of=/etc/cryptsetup-keys.d/root.key bs=1024 count=4
+        - chmod 600 /etc/cryptsetup-keys.d/root.key
+    late-commands:
+        - mkdir -p /target/etc/cryptsetup-keys.d /target/etc/cryptsetup-initramfs
+        - bash -c '
+          luks_uuid=$(blkid -t TYPE=crypto_LUKS -s UUID -o value);
+          cp /etc/cryptsetup-keys.d/root.key "/target/etc/cryptsetup-keys.d/${luks_uuid}.key";
+          chmod 600 "/target/etc/cryptsetup-keys.d/${luks_uuid}.key";
+          echo "dm_crypt-lvm UUID=${luks_uuid} /etc/cryptsetup-keys.d/${luks_uuid}.key luks" > /target/etc/crypttab;
+          echo "KEYFILE_PATTERN=/etc/cryptsetup-keys.d/*.key" >> /target/etc/cryptsetup-initramfs/conf-hook;'
+        - curtin in-target --target=/target -- update-initramfs -c -k all
+    codecs:
+        install: true
+    drivers:
+        install: true
+    updates: all
+    shutdown: reboot
