@@ -77,7 +77,7 @@ autoinstall:
             - name: cryptlvm
               volume: partition-2
               preserve: false
-              keyfile: /etc/cryptsetup-keys.d/root.key
+              key: 123
               id: dm_crypt-lvm
               type: dm_crypt
 
@@ -106,19 +106,6 @@ autoinstall:
               device: format-root
               id: mount-root
               type: mount
-    early-commands:
-        - mkdir -p /etc/cryptsetup-keys.d
-        - dd if=/dev/urandom of=/etc/cryptsetup-keys.d/root.key bs=1024 count=4
-        - chmod 600 /etc/cryptsetup-keys.d/root.key
-    late-commands:
-        - mkdir -p /target/etc/cryptsetup-keys.d /target/etc/cryptsetup-initramfs
-        - bash -c '
-          luks_uuid=$(blkid -t TYPE=crypto_LUKS -s UUID -o value);
-          cp /etc/cryptsetup-keys.d/root.key "/target/etc/cryptsetup-keys.d/${luks_uuid}.key";
-          chmod 600 "/target/etc/cryptsetup-keys.d/${luks_uuid}.key";
-          echo "dm_crypt-lvm UUID=${luks_uuid} /etc/cryptsetup-keys.d/${luks_uuid}.key luks" > /target/etc/crypttab;
-          echo "KEYFILE_PATTERN=/etc/cryptsetup-keys.d/*.key" >> /target/etc/cryptsetup-initramfs/conf-hook;'
-        - curtin in-target --target=/target -- update-initramfs -c -k all
     codecs:
         install: true
     drivers:
