@@ -19,7 +19,7 @@ autoinstall:
                   size: smallest
               wipe: superblock-recursive
               preserve: false
-              name: ''
+              name: 'hugo'
               grub_device: true
               id: disk-sda
               type: disk
@@ -77,7 +77,7 @@ autoinstall:
             - name: cryptlvm
               volume: partition-2
               preserve: false
-              key: 123
+              key: '123'
               id: dm_crypt-lvm
               type: dm_crypt
 
