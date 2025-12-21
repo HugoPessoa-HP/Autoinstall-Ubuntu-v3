@@ -13,19 +13,17 @@ autoinstall:
     packages:
         - libreoffice
     storage:
+        version: 1
         config:
             - ptable: gpt
-              match:
-                  size: smallest
-              wipe: superblock-recursive
+              wipe: superblock
               preserve: false
-              name: 'hugo'
+              name: disk0
               grub_device: true
-              id: disk-sda
+              id: sda
               type: disk
-
-            - device: disk-sda
-              size: 536870912  # 512MB
+            - device: sda
+              size: 1GB
               wipe: superblock
               flag: boot
               number: 1
@@ -33,75 +31,61 @@ autoinstall:
               grub_device: true
               id: partition-0
               type: partition
-
             - fstype: fat32
               volume: partition-0
               preserve: false
               id: format-0
               type: format
-
             - path: /boot/efi
               device: format-0
               id: mount-0
               type: mount
-
-            - device: disk-sda
-              size: 1073741824  # 1GB
+            - device: sda
+              size: 2GB
               wipe: superblock
               number: 2
               preserve: false
-              grub_device: false
               id: partition-1
               type: partition
-
             - fstype: ext4
               volume: partition-1
               preserve: false
               id: format-1
               type: format
-
             - path: /boot
               device: format-1
               id: mount-1
               type: mount
-
-            - device: disk-sda
+            - device: sda
               size: -1
               wipe: superblock
               number: 3
               preserve: false
-              grub_device: false
               id: partition-2
               type: partition
-
             - name: cryptlvm
               volume: partition-2
-              preserve: false
-              key: '123'
+              key: 123
               id: dm_crypt-lvm
               type: dm_crypt
-
             - name: VolGroup
               devices:
-                - dm_crypt-lvm
+                  - dm_crypt-lvm
               preserve: false
               id: lvm_volgroup-0
               type: lvm_volgroup
-
             - name: lv_root
               volgroup: lvm_volgroup-0
-              size: -1
+              size: 30GB
               wipe: superblock
               preserve: false
               id: lvm_partition-root
               type: lvm_partition
-
             - fstype: ext4
               volume: lvm_partition-root
               preserve: false
               id: format-root
               type: format
-
             - path: /
               device: format-root
               id: mount-root
